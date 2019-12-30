@@ -15,6 +15,9 @@ defmodule Esl do
 
   @impl Crawly.Spider
   def parse_item(response) do
+    # set the parsed body
+    parsed_body = Floki.parse(response.body)
+
     # Getting new urls to follow
     urls =
       response.body
@@ -29,21 +32,26 @@ defmodule Esl do
         |> Crawly.Utils.request_from_url()
       end)
 
+    # get the blog_post
+    blog_post = Floki.find(parsed_body, "article.blog_post")
+
     # Extract item from a page, e.g.
     # https://www.erlang-solutions.com/blog/introducing-telemetry.html
     title =
-      response.body
-      |> Floki.find("article.blog_post h1:first-child")
+      blog_post
+      |> Floki.find("h1:first-child")
       |> Floki.text()
 
     author =
-      response.body
-      |> Floki.find("article.blog_post p.subheading")
+      blog_post
+      |> Floki.find("p.subheading")
       |> Floki.text(deep: false, sep: "")
       |> String.trim_leading()
       |> String.trim_trailing()
 
-    text = Floki.find(response.body, "article.blog_post") |> Floki.text()
+    text =
+      blog_post
+      |> Floki.text()
 
     %Crawly.ParsedItem{
       :requests => requests,
